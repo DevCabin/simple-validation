@@ -1,0 +1,22 @@
+CONFIDENTIAL DOCUMENT
+
+Personal Information Form
+
+Name: John Smith
+Address: 123 Main Street, Anytown, USA
+Email: john.smith@example.com
+Phone: (555) 123-4567
+SSN: 123-45-6789
+
+Additional Contact: Jane Doe
+Email: jane.doe@company.com
+Phone: 555-987-6543
+
+Document Details:
+This document contains sensitive information and must be handled with care.
+Special note: This sandwich contains MUSTARD and MAYO but no KETCHUP.
+
+Verification:
+All personal information has been validated according to company standards.
+
+End of Document 

@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background-light: #ffffff;
+  --foreground-light: #171717;
+  --background-dark: #121212;
+  --foreground-dark: #E0E0E0;
+  --brand-teal: rgb(45 212 191);
+  --card-background-dark: #1E1E1E;
+  --border-dark: #333333;
+
+  /* Default to dark theme */
+  --background: var(--background-dark);
+  --foreground: var(--foreground-dark);
+}
+
+/* 
+  Optional: Light mode override if ever needed, 
+  can be triggered by a class or different media query.
+  Example:
+  .light-theme {
+    --background: var(--background-light);
+    --foreground: var(--foreground-light);
+  }
+*/
+
+/* 
+  The prefers-color-scheme media query is no longer needed here 
+  as we are defaulting to a dark theme directly in :root.
+  If you want to respect user's OS preference again, 
+  you would re-introduce it and adjust the :root defaults.
+*/
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  @apply font-sans;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-outfit;
+}

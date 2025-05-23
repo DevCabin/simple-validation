@@ -1,0 +1,9 @@
+# Sample Validation Rules
+# Copy this file to your GitHub repository and update the URL in the app
+
+Names must be capitalized
+Document must contain the word CONFIDENTIAL
+Email addresses must be in valid format
+Phone numbers must be in valid format
+SSN cannot be blank
+Document must contain MUSTARD and MAYO but not KETCHUP 

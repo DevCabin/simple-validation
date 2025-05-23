@@ -1,0 +1,5 @@
+This document pertains to john doe.
+His email is john.doe@example.com and phone number is (555) 123-4567.
+His SSN is not provided in this document.
+
+We have MUSTARD and MAYO, and also some KETCHUP available for the sandwiches. 
