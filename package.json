@@ -1,6 +1,6 @@
 {
-  "name": "simple-validation-1",
-  "version": "0.1.0",
+  "name": "hipaa-safe-ai-air-gapped",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

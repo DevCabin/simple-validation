@@ -244,6 +244,57 @@ function validateRule(rule: string, documentText: string, dynamicForbiddenWords:
     }
   }
   
+  // Rule: "Cannot contain X" - negation rule
+  if (lowerRule.includes('cannot contain') || lowerRule.includes('must not contain')) {
+    const containPattern = /(?:cannot contain|must not contain)\s+(.+)/i;
+    const match = rule.match(containPattern);
+    
+    if (match) {
+      const forbiddenItem = match[1].trim();
+      const hasItem = lowerText.includes(forbiddenItem.toLowerCase());
+      
+      return {
+        rule,
+        passed: !hasItem,
+        details: hasItem 
+          ? `Found forbidden item: ${forbiddenItem}` 
+          : `No forbidden item found: ${forbiddenItem}`
+      };
+    }
+  }
+
+  // Rule: "must contain at least X numbers" - number counting
+  if (lowerRule.includes('must contain') && lowerRule.includes('number')) {
+    const numberPattern = /must contain.*?(\w+)\s+numbers?/i;
+    const match = rule.match(numberPattern);
+    
+    if (match) {
+      const quantityWord = match[1].toLowerCase();
+      let requiredCount = 1;
+      
+      // Convert word numbers to actual numbers
+      const numberWords: { [key: string]: number } = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+      };
+      
+      if (numberWords[quantityWord]) {
+        requiredCount = numberWords[quantityWord];
+      } else if (/^\d+$/.test(quantityWord)) {
+        requiredCount = parseInt(quantityWord);
+      }
+      
+      const numbers = documentText.match(/\d/g);
+      const numberCount = numbers ? numbers.length : 0;
+      
+      return {
+        rule,
+        passed: numberCount >= requiredCount,
+        details: `Found ${numberCount} numbers, required at least ${requiredCount}`
+      };
+    }
+  }
+  
   // If no specific pattern matches, return a generic failure
   return {
     rule,
@@ -334,6 +385,7 @@ export async function POST(request: NextRequest) {
     const dtvFile = formData.get('file') as File;
     const forbiddenFile = formData.get('forbiddenWordsFile') as File | null;
     const customRulesText = formData.get('customRules') as string | null;
+    const managedRulesText = formData.get('managedRules') as string | null;
 
     if (!dtvFile) {
       return NextResponse.json({ error: 'Document to Validate (DTV) not uploaded' }, { status: 400 });
@@ -386,21 +438,30 @@ export async function POST(request: NextRequest) {
     let rules: string[] = [];
     let usingNLPRules = false;
 
-    if (customRulesText && customRulesText.trim() !== '') {
-      rules = customRulesText.split('\n').map(rule => rule.trim()).filter(rule => rule.length > 0);
-      usingNLPRules = true;
-      console.log("VALIDATION: Using custom rules provided by user:", rules);
-    } else {
-      console.log("VALIDATION: No custom rules provided, using default hardcoded rules.");
-      rules = [
-        'Names must be capitalized',
-        'Document must contain the word CONFIDENTIAL',
-        'Email addresses must be in valid format',
-        'Phone numbers must be in valid format',
-        'SSN cannot be blank',
-        'Document must contain MUSTARD and MAYO but not KETCHUP'
-      ];
+    // Get managed rules from settings
+    let managedRules: string[] = [];
+    if (managedRulesText && managedRulesText.trim() !== '') {
+      try {
+        managedRules = JSON.parse(managedRulesText);
+        console.log("VALIDATION: Loaded managed rules from settings:", managedRules);
+      } catch (error) {
+        console.error("VALIDATION: Error parsing managed rules JSON:", error);
+        managedRules = [];
+      }
     }
+
+    // Get custom rules from user input
+    let customRules: string[] = [];
+    if (customRulesText && customRulesText.trim() !== '') {
+      customRules = customRulesText.split('\n').map(rule => rule.trim()).filter(rule => rule.length > 0);
+      usingNLPRules = true;
+      console.log("VALIDATION: Using custom rules provided by user:", customRules);
+    }
+
+    // Combine both managed and custom rules and remove duplicates
+    const allRules = [...managedRules, ...customRules];
+    rules = [...new Set(allRules)]; // Remove duplicates
+    console.log("VALIDATION: Final combined rules:", rules);
 
     let validationResults: ValidationResult[] = [];
     const processedForbiddenWordsRule = false; // To track if forbidden words rule was handled by LLM or needs separate processing
@@ -416,7 +477,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (usingNLPRules && openai) {
+    if (openai) {
       console.log("VALIDATION: Processing rules with OpenAI.");
       const openAIPromises = activeRules.map(rule => 
         performOpenAIValidationForRule(rule, documentText)
@@ -424,7 +485,7 @@ export async function POST(request: NextRequest) {
       validationResults = await Promise.all(openAIPromises);
     } else {
       console.log("VALIDATION: Processing rules with legacy regex/heuristic logic.");
-      // Fallback to existing regex-based validation for all rules if OpenAI isn't used for custom rules
+      // Fallback to existing regex-based validation for all rules if OpenAI isn't available
       validationResults = validateDocument(documentText, activeRules, dynamicForbiddenWords);
     }
     

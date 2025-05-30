@@ -9,7 +9,13 @@ const openai = process.env.OPENAI_API_KEY
 interface RuleFeedback {
   originalRule: string;
   interpretation: string;
-  status: 'recognized' | 'unrecognized' | 'error';
+  status: 'recognized' | 'unrecognized' | 'error' | 'conflict';
+}
+
+interface ConflictInfo {
+  word: string;
+  conflictingRules: string[];
+  conflictType: string;
 }
 
 // This function provides a basic interpretation of rules based on existing patterns.
@@ -101,6 +107,65 @@ async function getOpenAIInterpretation(rule: string): Promise<Omit<RuleFeedback,
   }
 }
 
+// Function to detect conflicts between rules
+function detectRuleConflicts(rules: string[]): ConflictInfo[] {
+  const conflicts: ConflictInfo[] = [];
+  const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'hers', 'ours', 'theirs', 'contain', 'contains', 'word', 'document', 'not']);
+
+  // Extract words from each rule and categorize the rule type
+  const ruleAnalysis = rules.map(rule => {
+    const lowerRule = rule.toLowerCase();
+    const words = rule.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+    const significantWords = words.filter(word => !commonWords.has(word));
+    
+    let ruleType = 'unknown';
+    if (lowerRule.includes('must not contain') || lowerRule.includes('cannot contain') || lowerRule.includes('should not contain')) {
+      ruleType = 'must_not_contain';
+    } else if (lowerRule.includes('must contain')) {
+      ruleType = 'must_contain';
+    } else if (lowerRule.includes('must be') && lowerRule.includes('capitalized')) {
+      ruleType = 'must_be_capitalized';
+    } else if (lowerRule.includes('must have')) {
+      ruleType = 'must_have';
+    }
+    
+    return { rule, ruleType, significantWords };
+  });
+
+  // Check for conflicts between rules
+  for (let i = 0; i < ruleAnalysis.length; i++) {
+    for (let j = i + 1; j < ruleAnalysis.length; j++) {
+      const rule1 = ruleAnalysis[i];
+      const rule2 = ruleAnalysis[j];
+      
+      // Find common significant words between the two rules
+      const commonSignificantWords = rule1.significantWords.filter(word => 
+        rule2.significantWords.includes(word)
+      );
+      
+      if (commonSignificantWords.length > 0) {
+        // Check for direct conflicts
+        const isDirectConflict = (
+          (rule1.ruleType === 'must_contain' && rule2.ruleType === 'must_not_contain') ||
+          (rule1.ruleType === 'must_not_contain' && rule2.ruleType === 'must_contain')
+        );
+        
+        if (isDirectConflict) {
+          commonSignificantWords.forEach(word => {
+            conflicts.push({
+              word,
+              conflictingRules: [rule1.rule, rule2.rule],
+              conflictType: 'Direct contradiction: one rule requires the word while another forbids it'
+            });
+          });
+        }
+      }
+    }
+  }
+
+  return conflicts;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -112,7 +177,31 @@ export async function POST(request: NextRequest) {
 
     const rules = customRulesText.split('\n').map(rule => rule.trim()).filter(rule => rule.length > 0);
     
+    // Detect conflicts first
+    const conflicts = detectRuleConflicts(rules);
+    const conflictingRules = new Set<string>();
+    conflicts.forEach(conflict => {
+      conflict.conflictingRules.forEach(rule => conflictingRules.add(rule));
+    });
+    
     const feedbackPromises: Promise<RuleFeedback>[] = rules.map(async (rule) => {
+      // Check if this rule is involved in a conflict
+      if (conflictingRules.has(rule)) {
+        const relevantConflicts = conflicts.filter(conflict => 
+          conflict.conflictingRules.includes(rule)
+        );
+        const conflictDetails = relevantConflicts.map(conflict => 
+          `Conflict with word "${conflict.word}": ${conflict.conflictType}`
+        ).join('; ');
+        
+        return {
+          originalRule: rule,
+          interpretation: `⚠️ CONFLICT DETECTED: ${conflictDetails}`,
+          status: 'conflict' as const,
+        };
+      }
+      
+      // Normal processing for non-conflicting rules
       let interpretationResult: Omit<RuleFeedback, 'originalRule'> | null = null;
       if (openai) {
         interpretationResult = await getOpenAIInterpretation(rule);
@@ -129,7 +218,14 @@ export async function POST(request: NextRequest) {
 
     const feedback = await Promise.all(feedbackPromises);
 
-    return NextResponse.json({ feedback });
+    // Add conflict summary to response if conflicts exist
+    const response: any = { feedback };
+    if (conflicts.length > 0) {
+      response.conflicts = conflicts;
+      response.hasConflicts = true;
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Rule preview error:', error);

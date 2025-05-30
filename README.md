@@ -1,223 +1,227 @@
-# Document Validation Web App
+# HIPAA Safe AI - Air-Gapped Prototype v2.1.0
 
-A minimal Next.js 14 web application that validates uploaded PDF or text documents against a set of configurable rules.
-This project serves as a Proof of Concept for HIPAA Safe AI.
+> **AI-Powered Document Validation for HIPAA Compliance**  
+> A secure, air-gapped prototype for validating documents against custom rules using natural language processing.
 
-## Features
+![HIPAA Safe AI Demo](https://img.shields.io/badge/Version-2.1.0-brightgreen) ![Next.js](https://img.shields.io/badge/Next.js-15.3.2-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue) ![OpenAI](https://img.shields.io/badge/OpenAI-4.103.0-green)
 
-- **File Upload**: Supports PDF and text file uploads
-- **Text Extraction**: Automatically extracts text from PDF files using `pdf-parse`
-- **Rule-Based Validation**: Validates documents against customizable rules
-- **GitHub Integration**: Fetches validation rules from public GitHub repositories via gitmcp.io (Note: This feature is less prominent now with custom NLP rules).
-- **NLP-Based Custom Rules**: Allows users to input validation rules in natural language, interpreted by OpenAI.
-- **Modern UI & Styling (HIPAA Safe AI Theme)**:
-    - Dark theme with teal accents, inspired by `hipaasafeai.com/cloud.html`.
-    - Custom fonts: Alexandria for body, Outfit for headings (via Google Fonts).
-    - Dynamic particle background effect using `@tsparticles/react`.
-    - Frosted glass effect (backdrop-blur) on content cards.
-- **Real-time Results**: Shows validation results with pass/fail status and details.
-- **Updated Branding**: Page title and main heading are now "HIPAA Safe AI - Proof of Concept Demo".
+## 🚀 Features
 
-## Getting Started
+### Core Functionality
+- **AI-Powered Validation**: Natural language rule interpretation using OpenAI GPT-3.5-turbo
+- **Document Processing**: Support for PDF and text file uploads with intelligent text extraction
+- **Hybrid Validation**: AI + regex fallback patterns for robust rule processing
+- **Real-time Preview**: Test and validate rules before applying them to documents
 
-### Prerequisites
+### Advanced Safety Features (v2.1)
+- **Conflict Detection**: Automatically detects contradictory rules (e.g., "must contain X" vs "must not contain X")
+- **Rule Limit Protection**: Demo limited to 3 rules maximum for focused testing
+- **Duplicate Prevention**: Backend deduplication ensures no duplicate rules are processed
+- **Smart Word Analysis**: Filters common words to focus on significant terms for conflict detection
+
+### User Experience
+- **Managed Rules System**: Persistent rule collection with add/remove functionality
+- **Visual Feedback**: Color-coded rule status (green=recognized, orange=conflict, red=error, yellow=unrecognized)
+- **Forbidden Words Lists**: Upload custom .txt files with prohibited terms
+- **Mobile Responsive**: Optimized for all screen sizes with custom breakpoints
+- **Professional UI**: Modern dark theme with particle background effects
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 15.3.2, React 19, TypeScript 5
+- **Styling**: Tailwind CSS 3.4.1 with custom design system
+- **AI Integration**: OpenAI API 4.103.0 (GPT-3.5-turbo)
+- **Document Processing**: pdf-parse for PDF text extraction
+- **Animations**: TSParticles for background effects
+- **Development**: ESLint, PostCSS, Turbopack for fast development
+
+## 📋 Prerequisites
 
 - Node.js 18+ 
-- npm or yarn
+- npm or yarn package manager
+- OpenAI API key (optional - app works with regex fallback)
 
-### Installation
+## 🚀 Quick Start
 
-1. Clone this repository:
+### 1. Clone and Install
 ```bash
-git clone <your-repository-url>
-cd simple-validation-1
-```
-
-2. Install dependencies:
-```bash
+git clone <repository-url>
+cd air_gapped_prototype
 npm install
 ```
 
-3. Run the development server:
+### 2. Environment Setup
+Create a `.env.local` file in the root directory:
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+```
+*Note: The app works without OpenAI API key using regex patterns, but AI features will be disabled.*
+
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Deployment to Vercel
-
-This app is ready for deployment to Vercel with zero configuration:
-
-1. Push your code to GitHub
-2. Import the project in Vercel
-3. Deploy automatically
-
-Alternatively, use the Vercel CLI:
+### 4. Build for Production
 ```bash
-npm install -g vercel
-vercel
+npm run build
+npm start
 ```
 
-## Configuration
+## 📖 Usage Guide
 
-### Setting up Validation Rules
+### Basic Workflow
+1. **Define Rules**: Enter up to 3 validation rules in natural language
+2. **Preview & Test**: Use "Preview & Apply Rules" to test rule understanding
+3. **Upload Document**: Select a PDF or text file to validate
+4. **Review Results**: Get detailed validation results with explanations
 
-The app fetches validation rules from a GitHub repository via gitmcp.io. To configure your own rules:
-
-1. Create a public GitHub repository
-2. Add a rules file (e.g., `rules.txt` or `rules.md`)
-3. Update the `rulesUrl` in `src/app/api/validate/route.ts`:
-
-```typescript
-const rulesUrl = 'https://gitmcp.io/your-username/your-repo/main/path/to/rules.txt';
+### Example Rules
 ```
-
-### Rule Format
-
-Each rule should be on a separate line. The app supports various rule patterns:
-
-#### Example Rules:
-```
-Names must be capitalized
-Document must contain the word CONFIDENTIAL  
+Document must contain patient consent statement
+Must not contain Social Security Numbers
+Names must be properly capitalized
+Document must be dated within last 30 days
 Email addresses must be in valid format
-Phone numbers must be in valid format
-SSN cannot be blank
-Document must contain MUSTARD and MAYO but not KETCHUP
 ```
 
-#### Supported Rule Types:
+### Advanced Features
 
-1. **Name Capitalization**: Rules containing "name" and "capitalized"
-2. **Keyword Requirements**: Rules with "must contain" or specific keywords
-3. **Email Validation**: Rules mentioning "email" and "format"
-4. **Phone Validation**: Rules mentioning "phone" and "format" 
-5. **SSN Validation**: Rules about SSN being blank
-6. **Complex Word Logic**: Rules with AND/OR/NOT logic for multiple keywords
+#### Conflict Detection
+The system automatically detects conflicting rules:
+- ✅ **Safe**: "must contain signatures" + "signatures must be dated"
+- ⚠️ **Conflict**: "must contain mustard" + "must not contain mustard"
 
-## Sample Rules Repository
+#### Managed Rules
+- Successfully recognized rules are automatically added to your managed collection
+- Rules persist across sessions within the browser
+- Easy removal with trash button interface
 
-For testing, you can use these sample rules by creating a file in your GitHub repo:
+#### Forbidden Words Lists
+- Upload .txt files with prohibited terms (one per line)
+- Automatically validates documents against uploaded lists
+- Sample file available for download
 
-```
-Names must be capitalized
-Document must contain the word CONFIDENTIAL
-Email addresses must be in valid format
-Phone numbers must be in valid format
-SSN cannot be blank
-Document must contain MUSTARD and MAYO but not KETCHUP
-```
+## 🏗️ Architecture
 
-## Project Structure
-
+### Frontend Structure
 ```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── preview-rules/
-│   │   │   └── route.ts          # API endpoint for NLP rule preview
-│   │   └── validate/
-│   │       └── route.ts          # API endpoint for file processing & validation
-│   ├── globals.css               # Global styles, font definitions, dark theme CSS vars
-│   ├── layout.tsx               # Root layout, global font import (Alexandria, Outfit)
-│   └── page.tsx                 # Main UI component
-├── components/
-│   └── ParticlesBackground.tsx  # Particle animation component
-├── utils/
-│   └── textValidation.ts        # Client-side rule text pre-validation
-├── public/
-// ... existing code ...
-
-## Technologies Used
-
-- **Next.js 14**: React framework with App Router
-- **TypeScript**: Type-safe JavaScript
-- **Tailwind CSS**: Utility-first CSS framework
-- **OpenAI API (gpt-3.5-turbo)**: For NLP rule interpretation and validation.
-- **pdf-parse**: PDF text extraction
-- **@tsparticles/react & @tsparticles/slim**: For particle background effects.
-- **Google Fonts (next/font/google)**: Alexandria (body), Outfit (headings).
-- **Multer**: For handling multipart/form-data (file uploads).
-- **gitmcp.io**: GitHub file access API (less emphasized now).
-
-## Validation Logic
-
-The app includes intelligent pattern matching for different rule types:
-
-- **Name validation**: Detects capitalized names using regex patterns
-- **Email validation**: Uses standard email regex patterns
-- **Phone validation**: Supports various US phone number formats
-- **SSN validation**: Detects XXX-XX-XXXX patterns
-- **Keyword matching**: Flexible keyword detection with AND/OR/NOT logic
-- **Fallback validation**: Generic keyword extraction for custom rules
-
-## Sample Test Documents
-
-Create test documents with:
-
-**PDF or Text content:**
-```
-CONFIDENTIAL DOCUMENT
-
-Name: John Smith
-Email: john.smith@example.com  
-Phone: (555) 123-4567
-SSN: 123-45-6789
-
-This document contains MUSTARD and MAYO for sandwiches.
+│   │   ├── validate/route.ts      # Main validation endpoint
+│   │   └── preview-rules/route.ts # Rule preview & conflict detection
+│   ├── components/
+│   │   └── ParticlesBackground.tsx
+│   ├── utils/
+│   │   └── textValidation.ts      # Client-side validation helpers
+│   └── page.tsx                   # Main application component
+├── styles/
+└── types/
 ```
 
-This sample will pass most validation rules and demonstrate the validation features.
+### Key Components
 
-## Development
+#### Validation Engine (`/api/validate`)
+- Processes documents and applies validation rules
+- Combines managed rules with custom rules
+- Handles both AI and regex-based validation
+- Supports forbidden words lists
 
-### Adding New Rule Types
+#### Conflict Detection (`/api/preview-rules`)
+- Analyzes rules for contradictions
+- Classifies rule types (must_contain, must_not_contain, etc.)
+- Provides detailed conflict explanations
+- Prevents conflicting rules from being added
 
-To add new validation patterns, modify the `validateRule` function in `src/app/api/validate/route.ts`:
+#### Frontend State Management
+- React hooks for state management
+- Real-time validation feedback
+- Error handling and user guidance
+- Responsive UI updates
 
-```typescript
-// Add new rule pattern
-if (lowerRule.includes('your-pattern')) {
-  // Your validation logic
-  return {
-    rule,
-    passed: true/false,
-    details: 'Your details'
-  };
-}
+## 🔒 Security Features
+
+### Air-Gapped Design
+- No external dependencies during runtime (except optional OpenAI API)
+- Local document processing
+- No data persistence on server
+- Client-side file handling
+
+### Data Protection
+- Documents processed in memory only
+- No file storage on server
+- Configurable API endpoints
+- Input validation and sanitization
+
+## 🧪 Testing
+
+### Manual Testing
+1. **Rule Conflicts**: Try "must contain X" and "must not contain X"
+2. **Rule Limits**: Enter more than 3 rules to test limit enforcement
+3. **Document Types**: Test with various PDF and text files
+4. **Edge Cases**: Empty files, large files, special characters
+
+### API Testing
+```bash
+# Test rule preview
+curl -X POST http://localhost:3000/api/preview-rules \
+  -H "Content-Type: application/json" \
+  -d '{"customRulesText":"must contain test\nmust not contain test"}'
+
+# Test validation
+curl -X POST http://localhost:3000/api/validate \
+  -F "file=@sample.txt" \
+  -F "customRules=must contain test"
 ```
 
-### Customizing the UI
+## 🚧 Known Limitations
 
-The main UI is in `src/app/page.tsx`.
-Global styles, including the dark theme, CSS variables, and base font applications, are in `src/app/globals.css`.
-Google Fonts (Alexandria, Outfit) are imported and made available via CSS variables in `src/app/layout.tsx` and configured in `tailwind.config.ts`.
-The dynamic particle background is implemented in `src/components/ParticlesBackground.tsx` and rendered in `src/app/page.tsx`. Content cards in `page.tsx` use `backdrop-blur-sm` for a frosted effect.
+- Demo limited to 3 rules maximum
+- OpenAI API required for advanced natural language understanding
+- Large PDF files (>10MB) not supported
+- Browser-based state management (no server persistence)
 
-## Troubleshooting
+## 🔮 Future Enhancements
 
-- **PDF not processing**: Ensure the PDF contains selectable text (not just images)
-- **Rules not loading**: Check that your GitHub repository is public and the URL is correct
-- **File upload issues**: Verify file size limits and types in your deployment environment
+### Planned Features (v3.0)
+- [ ] Semantic conflict detection beyond word-based matching
+- [ ] Rule templates for common HIPAA scenarios
+- [ ] Batch document processing
+- [ ] Export/import rule sets
+- [ ] Advanced analytics and reporting
+- [ ] Custom regex pattern builder
+- [ ] Integration with document management systems
 
-## License
+### Technical Improvements
+- [ ] Server-side rule persistence
+- [ ] Enhanced PDF processing capabilities
+- [ ] Performance optimizations for large documents
+- [ ] Comprehensive test suite
+- [ ] Docker containerization
 
-This project is open source and available under the MIT License.
+## 🤝 Contributing
 
-## TODO
+This is a proof-of-concept prototype. For production use, consider:
+- Comprehensive security audit
+- Performance testing with large document sets
+- Integration with existing HIPAA compliance workflows
+- Enhanced error handling and logging
 
-- **Improve SSN Rule Handling in AI Validation:**
-  - Currently, a rule like "if a Social Security number is detected, flag it" results in `passed: true` with details "The document adheres to this rule." when an SSN is present. This is because the AI interprets "flag it" as "confirm its presence."
-  - **Issue**: The document `sample-document.txt` contains `SSN: 123-45-6789`. With the rule "if a Social Security number is detected, flag it", the AI validation passes, which might be counter-intuitive if the intent is to *fail* or *warn* on SSN presence.
-  - **Ambiguity**: The phrasing "if a Social Security number is detected, flag it" is too ambiguous for the AI if the desired outcome is a validation failure or a specific warning alert.
-  - **Suggestion**: To make the AI treat the presence of an SSN as a validation failure, the rule should be more explicit. For example: `"The document must NOT contain a Social Security Number"`.
-  - **Expected Outcome with Suggested Rule**: With the more explicit rule, if an SSN is found (as in `sample-document.txt`), the AI should return:
-    ```json
-    {
-      "passed": false,
-      "details": "The document fails because it contains a Social Security Number."
-    }
-    ```
-    (or a similar message indicating failure due to SSN presence).
-  - Further testing is needed with various phrasings for rules intended to detect and flag/fail sensitive information to ensure the AI's interpretation aligns with user intent.
+## 📄 License
+
+This project is a prototype for demonstration purposes. Please ensure compliance with your organization's security and privacy requirements before production use.
+
+## 🆘 Support
+
+For technical issues or questions:
+1. Check the browser console for error messages
+2. Verify OpenAI API key configuration
+3. Ensure file types are supported (PDF, TXT)
+4. Review rule syntax and conflict detection messages
+
+---
+
+**Version 2.1.0** - Enhanced conflict detection and user safety features  
+**Built with ❤️ for HIPAA compliance and document security**
